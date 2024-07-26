@@ -28,10 +28,6 @@ public class FolderOperationServiceImpl implements FolderOperationsService {
 		 if (!Files.exists(path)) {
 	            
 	            Files.createDirectories(path);
-	           
-//
-//		if (new File(rootDirectoryOfFileSystem + "/" + name).mkdirs()) {
-//			return name + ", folder create successfully!!";
 		}
 		 }catch (IOException e) {
 			 return name + ", folder creation failed";
@@ -43,8 +39,6 @@ public class FolderOperationServiceImpl implements FolderOperationsService {
 
 	@Override
 	public String deleteFolder(String path) {
-
-		//File directory = new File(path);
 		Path directory = Path.of(path + "/"); 
 		try (Stream<Path> pathStream = Files.walk(directory)) { //.toPath().toAbsolutePath())) {
 			pathStream.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
@@ -59,10 +53,7 @@ public class FolderOperationServiceImpl implements FolderOperationsService {
 	@Override
 	public String moveFolder(String sourcePath, String destinationPath) {
 
-		try {
-//			Files.move(new File(sourcePath).toPath(), new File(destinationPath).toPath(),
-//					StandardCopyOption.REPLACE_EXISTING);
-			
+		try {			
 			 Files.move(Paths.get(sourcePath)
 					 , Paths.get(destinationPath), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
@@ -76,14 +67,12 @@ public class FolderOperationServiceImpl implements FolderOperationsService {
 	@Override
 	public EntityProperties getFolderProperties(String path) {
 		File file = new File(path);
-		boolean exists =      file.exists();      // Check if the file exists
-		boolean isDirectory = file.isDirectory(); // Check if it's a directory
-//		boolean isFile =      file.isFile();      // Check if it's a regular file
-		
+		boolean exists =      file.exists();      
+		boolean isDirectory = file.isDirectory(); 	
 		EntityProperties ep;
 		if(exists) {
 			if(isDirectory) {
-				ep=new EntityProperties("Directory",file.getName(),file.getPath(), (int)getDirectorySizeJava8(path)%2);
+				ep=new EntityProperties("Directory",file.getName(),file.getPath(), (int)getDirectorySizeJava8(path));
 			}else {
 				return new EntityProperties(path+" is not a directory");
 			}
@@ -101,10 +90,8 @@ public class FolderOperationServiceImpl implements FolderOperationsService {
 	      try (Stream<Path> walk = Files.walk(path)) {
 
 	          size = walk
-                  //.peek(System.out::println) // debug
 	                  .filter(Files::isRegularFile)
 	                  .mapToLong(p -> {
-	                      // ugly, can pretty it with an extract method
 	                      try {
 	                          return Files.size(p);
 	                      } catch (IOException e) {

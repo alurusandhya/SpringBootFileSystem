@@ -29,8 +29,12 @@ public class FileOperationServiceImpl implements FileOperationsService {
 
 	@Override
 	public String createFile(String name) {
-		if (new File(rootDirectoryOfFileSystem + "/" + name).mkdirs()) {
-			return name + ", File create successfully!!";
+		try {
+			if (new File(rootDirectoryOfFileSystem + "/" + name).createNewFile()) {
+				return name + ", File create successfully!!";
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 		return name + ", File creation failed";
@@ -57,13 +61,9 @@ public class FileOperationServiceImpl implements FileOperationsService {
 			Path source=Paths.get(sourcePath);
 			List<String> destFolder=Arrays.asList(destinationPath.split("\\\\"));
 			List<String> destFolderFinal=destFolder.subList(0, destFolder.size()-1);
-//			System.out.println("=====Destination folder => "+destFolderFinal+ destFolder);
 			File directory = new File(destFolderFinal.stream().collect(Collectors.joining("\\\\")));
 		    if (! directory.exists()){
 		        directory.mkdir();
-		        System.out.println("**************directory created successfully!!!**************");
-		    }else {
-		    	System.out.println("**************directory alreay exist...**************");
 		    }
 			Path destination=Paths.get(destinationPath);
 			Files.move(source, destination,
@@ -79,25 +79,19 @@ public class FileOperationServiceImpl implements FileOperationsService {
 	@Override
 	public String writeAFile(String path, String content) {
 		Path filePath = Paths.get(rootDirectoryOfFileSystem + "/" + path);
-		File file = new File(path);
-		boolean exists =      file.exists();      // Check if the file exists
-		boolean isDirectory = file.isDirectory(); // Check if it's a directory
-//		boolean isFile =      file.isFile();     
+		File file = new File(rootDirectoryOfFileSystem + "/" + path);
 
-		try {			
-			if(exists) {
-				System.out.println("File is available in the path");
+		try {
+			if (file.createNewFile()) {
+			    System.out.println("File created: " + file.getName());
+			  } else {
+			    System.out.println("File already exists.");
+			  }
 			Files.write(filePath, content.getBytes(), StandardOpenOption.APPEND);
-			}else {
-				return "unable to add the data to the File,Because ther is no file in the path";
-			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return "unable to add the data to the File due to => " + e.getClass();
 		}
+		
 		return path+"Data added to the file Succesfully";
 	}
-	
-
 }

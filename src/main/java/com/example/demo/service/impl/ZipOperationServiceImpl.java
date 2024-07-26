@@ -15,11 +15,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.dto.EntityProperties;
 import com.example.demo.service.ZipOperationsService;
 
 @Service
@@ -29,10 +32,12 @@ public class ZipOperationServiceImpl implements ZipOperationsService {
 	private String rootDirectoryOfFileSystem;
 
 	@Override
-	public String createFile(String zipName,String fileName){
+	public String createZip(String zipName,String fileName){
 		  try {
-	      Path zipFile = Files.createFile(Paths.get(rootDirectoryOfFileSystem + "/" + zipName));
-
+			  Path zipFile = null;
+			  if (zipName.toString().endsWith(".zip")){
+	           zipFile = Files.createFile(Paths.get(rootDirectoryOfFileSystem + "/" + zipName));
+			  }
 	        Path sourceDirPath = Paths.get(rootDirectoryOfFileSystem + "/" + fileName);
 	        try (ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(zipFile));
 	             Stream<Path> paths = Files.walk(sourceDirPath)) {
@@ -52,7 +57,7 @@ public class ZipOperationServiceImpl implements ZipOperationsService {
 	        
 		  }catch (Exception e) {
 			  
-			  return zipName + ", zip folder creation is failed";
+			  return zipName + ", zip folder creation is failed dut to invalid format";
 			
 		}
 	    
@@ -60,7 +65,7 @@ public class ZipOperationServiceImpl implements ZipOperationsService {
 	}
 
 	@Override
-	public String deleteFile(String path) {
+	public String deleteZip(String path) {
 		Path zipFile =Paths.get(rootDirectoryOfFileSystem + "/" + path);				
 		try {
 			Files.delete(zipFile);
@@ -71,31 +76,63 @@ public class ZipOperationServiceImpl implements ZipOperationsService {
 
 		return path + ", Zip is deleted successfully!!";
 	}
-
+	
+	
 	@Override
-	public String moveFile(String sourcePath, String destinationPath) {
-
+	public EntityProperties getZipProperties(String path) {
+			
+		EntityProperties ep;
+		 
+		 ZipFile zipFile = null;		 
+		 
 		try {
-			Path source=Paths.get(sourcePath);
-			List<String> destFolder=Arrays.asList(destinationPath.split("\\\\"));
-			List<String> destFolderFinal=destFolder.subList(0, destFolder.size()-1);
-//			System.out.println("=====Destination folder => "+destFolderFinal+ destFolder);
-			File directory = new File(destFolderFinal.stream().collect(Collectors.joining("\\\\")));
-		    if (! directory.exists()){
-		        directory.mkdir();
-		        System.out.println("**************directory created successfully!!!**************");
-		    }else {
-		    	System.out.println("**************directory alreay exist...**************");
-		    }
-			Path destination=Paths.get(destinationPath);
-			Files.move(source, destination,
-					StandardCopyOption.REPLACE_EXISTING);
+			if (path.toString().endsWith(".zip")){
+			zipFile = new ZipFile(path);
+			 ZipEntry zipEntry = new ZipEntry(zipFile.getName());
+			 
+			 String zipName = String.valueOf(zipEntry.getName());
+			 
+			 String[] str = zipName.replace('\\',',').split(",");
+			 
+			 ep=new EntityProperties("Directory",str[str.length -1],zipFile.getName(), (zipFile.size())/2);		 
+		 
+			
+			}else {
+				return new EntityProperties(path+" is not a zip format");
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			return "unable to move File due to => " + e.getClass();
+			return new EntityProperties(path+" is not a zip format");
+			
 		}
+		 return ep;
+		
+	}
+	
+	public static long getDirectorySizeJava8(String pathString) {
+		Path path = Paths.get(pathString);
+	      long size = 0;
+	      try (Stream<Path> walk = Files.walk(path)) {
 
-		return sourcePath + ", succesfully moved to " + destinationPath;
-	}	
+	          size = walk
+	                  .filter(Files::isRegularFile)
+	                  .mapToLong(p -> {
+	                      try {
+	                          return Files.size(p);
+	                      } catch (IOException e) {
+	                          System.out.printf("Failed to get size of %s%n%s", p, e);
+	                          return 0L;
+	                      }
+	                  })
+	                  .sum();
+
+	      } catch (IOException e) {
+	          System.out.printf("IO errors %s", e);
+	      }
+
+	      return size;
+
+	  }
 
 }
+
